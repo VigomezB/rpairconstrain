@@ -25,7 +25,7 @@ Install the development version from GitHub:
 ```r
 # install.packages("devtools")
 devtools::install_github(
-  "VigomezB/Randomly-pairing-two-vectors-under-constraints"
+  "VigomezB/rpairconstrain"
 )
 ```
 
