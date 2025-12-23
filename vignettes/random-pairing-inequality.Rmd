@@ -1,0 +1,106 @@
+---
+title: "Randomly pairing two vectors under inequality constraints"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Randomly pairing two vectors under inequality constraints}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(rpairconstrain)
+```
+
+---
+title: "Randomly pairing two vectors under inequality constraints"
+description: "Random pairing of numeric vectors under ≥ or > constraints, with and without replacement."
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+## Motivation
+
+In many applied settings—such as tax and income microdata reconstruction from
+tabulated data—researchers face the problem of **combining different components
+randomly while enforcing logical or accounting constraints**.
+
+Typical examples include:
+
+- One income component must be **greater than or equal to** another.
+- A component can be drawn from a **finite pool** (no replacement).
+- Assignments should be **random**, not deterministic.
+
+This vignette documents two helper functions provided by the
+`rpairconstrain` package that address these needs.
+
+---
+
+## Overview of the approach
+
+The general idea is:
+
+1. Start with two numeric vectors.
+2. For each element of the first vector, identify feasible candidates in the
+   second vector under an inequality constraint.
+3. Randomly select one feasible candidate.
+4. Optionally remove the selected value from the pool.
+
+The package provides two variants depending on whether reuse of values is
+allowed.
+
+---
+
+## Functions provided by the package
+
+### 1. Pairing with replacement
+
+`random_sample_greater()` pairs each element of a vector `x` with a value from
+`y` **allowing reuse** of values from `y`.
+
+The enforced constraint is:
+
+- `sampled >= x[i]` (default), or
+- `sampled > x[i]` if `strict = TRUE`.
+
+This is appropriate when `y` represents a distribution or source that can be
+drawn from repeatedly.
+
+---
+
+### 2. Pairing without replacement
+
+`random_sample_greater_no_replace()` pairs each element of a vector `a` with a
+value from `b` **without replacement**.
+
+Each value of `b` can be used at most once. If no feasible candidate exists for
+a given element, the original value is left unchanged.
+
+This is appropriate when `b` represents a finite pool of observations.
+
+---
+
+## Example: pairing with replacement
+
+```{r}
+library(rpairconstrain)
+
+set.seed(123)
+
+x <- c(10, 20, 30, 40)
+y <- c(5, 10, 15, 25, 35, 50)
+
+random_sample_greater(x, y)
