@@ -2,33 +2,45 @@
 % Please edit documentation in R/pairing.R
 \name{random_sample_greater_no_replace}
 \alias{random_sample_greater_no_replace}
-\title{Randomly sample values under an inequality constraint (without replacement)}
+\title{Randomly match values under an inequality constraint (without replacement)}
 \usage{
-random_sample_greater_no_replace(a, b, strict = FALSE)
+random_sample_greater_no_replace(
+  x,
+  y,
+  strict = FALSE,
+  max_tries = 1000L,
+  na_rm = TRUE
+)
 }
 \arguments{
-\item{a}{Numeric vector to be matched (typically the lower component).}
+\item{x}{Numeric vector to be matched.}
 
-\item{b}{Numeric vector providing candidate matches (finite pool).}
+\item{y}{Numeric vector providing candidate matches (finite pool).}
 
-\item{strict}{Logical. If \code{TRUE}, enforce \code{b[j] > a[i]}. If \code{FALSE}, enforce \code{b[j] >= a[i]}.}
+\item{strict}{Logical. If \code{TRUE}, enforce \code{>}; otherwise enforce \code{>=}.}
+
+\item{max_tries}{Integer. Maximum number of random draws per \code{x[i]} before giving up
+and leaving \code{x[i]} unchanged.}
+
+\item{na_rm}{Logical. If \code{TRUE} (default), remove \code{NA} values from \code{x} and \code{y}.}
 }
 \value{
-A data frame with columns \code{original_a} and \code{replaced_a}.
+A data frame with columns \code{original_x} and \code{matched_x}.
 }
 \description{
-Iterates over \code{a} and, for each element \code{a[i]}, randomly selects one value from \code{b}
-that satisfies \code{b[j] >= a[i]} (default) or \code{b[j] > a[i]} (\code{strict = TRUE}). The chosen
-value is removed from \code{b} so it cannot be reused.
+Iterates over \code{x} and attempts to replace each \code{x[i]} with one value from \code{y}
+satisfying the constraint (\code{>=} by default, or \code{>} if \code{strict = TRUE}).
+Sampling is done \strong{without replacement}: once a \code{y} value is used, it is removed.
 }
 \details{
-If no candidate exists for a given \code{a[i]}, the function leaves \code{a[i]} unchanged.
-If you prefer \code{NA}, replace \code{next} with \code{a_out[i] <- NA_real_}.
+if no feasible value exists for a given \code{x[i]}, it leaves \code{x[i]} unchanged.
 }
 \examples{
 set.seed(123)
-a <- c(10, 20, 30)
-b <- c(10, 20, 25, 35, 50)
-out <- random_sample_greater_no_replace(a, b)
-stopifnot(all(out$replaced_a >= out$original_a))
+x <- c(10, 20, 30, 40)
+y <- c(10, 20, 30, 40, 50)
+out <- random_sample_greater_no_replace(x, y, strict = FALSE, max_tries = 1000)
+stopifnot(all(out$matched_x >= out$original_x))
+stopifnot(length(unique(out$matched_x)) == length(out$matched_x))
+
 }

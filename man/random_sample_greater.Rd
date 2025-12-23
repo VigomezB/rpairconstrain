@@ -4,7 +4,7 @@
 \alias{random_sample_greater}
 \title{Randomly sample values under an inequality constraint (with replacement)}
 \usage{
-random_sample_greater(x, y, strict = FALSE)
+random_sample_greater(x, y, strict = FALSE, na_rm = TRUE)
 }
 \arguments{
 \item{x}{Numeric vector to be matched (typically the lower component).}
@@ -12,6 +12,8 @@ random_sample_greater(x, y, strict = FALSE)
 \item{y}{Numeric vector providing candidate matches (typically the upper component).}
 
 \item{strict}{Logical. If \code{TRUE}, enforce \code{sampled > x[i]}. If \code{FALSE}, enforce \code{sampled >= x[i]}.}
+
+\item{na_rm}{Logical. If \code{TRUE} (default), remove \code{NA} values from \code{x} and \code{y}.}
 }
 \value{
 A data frame with columns \code{x} and \code{sampled}.
@@ -24,7 +26,12 @@ is performed with replacement, so values in \code{y} may be reused.
 \examples{
 set.seed(123)
 x <- c(10, 20, 30)
-y <- c(5, 10, 15, 25, 50)
-out <- random_sample_greater(x, y)
+y <- c(10, 20, 30, 40, 50)
+out <- random_sample_greater(x, y, strict = FALSE)
 stopifnot(all(out$sampled >= out$x))
+
+set.seed(123)
+out2 <- random_sample_greater(x, y, strict = TRUE)
+stopifnot(all(out2$sampled > out2$x))
+
 }

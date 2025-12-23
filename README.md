@@ -1,4 +1,4 @@
-#rpairconstrain
+# rpairconstrain
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/VigomezB/Randomly-pairing-two-vectors-under-constraints/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/VigomezB/Randomly-pairing-two-vectors-under-constraints/actions/workflows/R-CMD-check.yaml)
@@ -33,6 +33,7 @@ devtools::install_github(
 
 This is a basic example which shows you how to solve a common problem:
 
+```r
 library(rpairconstrain)
 
 set.seed(123)
@@ -48,6 +49,3 @@ res_with_replacement
 # Pairing without replacement
 res_no_replacement <- random_sample_greater_no_replace(lower, upper)
 res_no_replacement
-
-```
-

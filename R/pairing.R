@@ -7,6 +7,7 @@
 #' @param x Numeric vector to be matched (typically the lower component).
 #' @param y Numeric vector providing candidate matches (typically the upper component).
 #' @param strict Logical. If `TRUE`, enforce `sampled > x[i]`. If `FALSE`, enforce `sampled >= x[i]`.
+#' @param na_rm Logical. If `TRUE` (default), remove `NA` values from `x` and `y`.
 #'
 #' @return A data frame with columns `x` and `sampled`.
 #' @export
@@ -14,24 +15,40 @@
 #' @examples
 #' set.seed(123)
 #' x <- c(10, 20, 30)
-#' y <- c(5, 10, 15, 25, 50)
-#' out <- random_sample_greater(x, y)
+#' y <- c(10, 20, 30, 40, 50)
+#' out <- random_sample_greater(x, y, strict = FALSE)
 #' stopifnot(all(out$sampled >= out$x))
+#'
+#' set.seed(123)
+#' out2 <- random_sample_greater(x, y, strict = TRUE)
+#' stopifnot(all(out2$sampled > out2$x))
+#'
+random_sample_greater <- function(x, y, strict = FALSE, na_rm = TRUE) {
+  if (!is.numeric(x) || !is.numeric(y)) {
+    stop("`x` and `y` must be numeric vectors.", call. = FALSE)
+  }
 
+  if (na_rm) {
+    x <- x[!is.na(x)]
+    y <- y[!is.na(y)]
+  }
 
-random_sample_greater <- function(x, y, strict = FALSE) {
-  stopifnot(is.numeric(x), is.numeric(y))
-
-  x <- x[!is.na(x)]
-  y <- y[!is.na(y)]
-
+  if (length(x) == 0) {
+    stop("`x` must contain at least one value.", call. = FALSE)
+  }
   if (length(y) == 0) {
     stop("`y` must contain at least one non-missing value.", call. = FALSE)
+  }
+  if (any(!is.finite(x))) {
+    stop("`x` must contain only finite values.", call. = FALSE)
+  }
+  if (any(!is.finite(y))) {
+    stop("`y` must contain only finite values.", call. = FALSE)
   }
 
   cmp <- if (strict) `>` else `>=`
 
-  feasible <- vapply(x, \(xi) any(cmp(y, xi)), logical(1))
+  feasible <- vapply(x, function(xi) any(cmp(y, xi)), logical(1))
   if (any(!feasible)) {
     stop("Some values in `x` cannot be matched with any value in `y`.", call. = FALSE)
   }
@@ -48,54 +65,97 @@ random_sample_greater <- function(x, y, strict = FALSE) {
   data.frame(x = x, sampled = sampled)
 }
 
-#' Randomly sample values under an inequality constraint (without replacement)
+
+#' Randomly match values under an inequality constraint (without replacement)
 #'
-#' Iterates over `a` and, for each element `a[i]`, randomly selects one value from `b`
-#' that satisfies `b[j] >= a[i]` (default) or `b[j] > a[i]` (`strict = TRUE`). The chosen
-#' value is removed from `b` so it cannot be reused.
+#' Iterates over `x` and attempts to replace each `x[i]` with one value from `y`
+#' satisfying the constraint (`>=` by default, or `>` if `strict = TRUE`).
+#' Sampling is done **without replacement**: once a `y` value is used, it is removed.
 #'
-#' If no candidate exists for a given `a[i]`, the function leaves `a[i]` unchanged.
-#' If you prefer `NA`, replace `next` with `a_out[i] <- NA_real_`.
+#' if no feasible value exists for a given `x[i]`, it leaves `x[i]` unchanged.
 #'
-#' @param a Numeric vector to be matched (typically the lower component).
-#' @param b Numeric vector providing candidate matches (finite pool).
-#' @param strict Logical. If `TRUE`, enforce `b[j] > a[i]`. If `FALSE`, enforce `b[j] >= a[i]`.
+#' @param x Numeric vector to be matched.
+#' @param y Numeric vector providing candidate matches (finite pool).
+#' @param strict Logical. If `TRUE`, enforce `>`; otherwise enforce `>=`.
+#' @param max_tries Integer. Maximum number of random draws per `x[i]` before giving up
+#'   and leaving `x[i]` unchanged.
+#' @param na_rm Logical. If `TRUE` (default), remove `NA` values from `x` and `y`.
 #'
-#' @return A data frame with columns `original_a` and `replaced_a`.
+#' @return A data frame with columns `original_x` and `matched_x`.
 #' @export
 #'
 #' @examples
 #' set.seed(123)
-#' a <- c(10, 20, 30)
-#' b <- c(10, 20, 25, 35, 50)
-#' out <- random_sample_greater_no_replace(a, b)
-#' stopifnot(all(out$replaced_a >= out$original_a))
+#' x <- c(10, 20, 30, 40)
+#' y <- c(10, 20, 30, 40, 50)
+#' out <- random_sample_greater_no_replace(x, y, strict = FALSE, max_tries = 1000)
+#' stopifnot(all(out$matched_x >= out$original_x))
+#' stopifnot(length(unique(out$matched_x)) == length(out$matched_x))
+#'
+random_sample_greater_no_replace <- function(x,
+                                             y,
+                                             strict = FALSE,
+                                             max_tries = 1000L,
+                                             na_rm = TRUE) {
+  if (!is.numeric(x) || !is.numeric(y)) {
+    stop("`x` and `y` must be numeric vectors.", call. = FALSE)
+  }
+  if (!is.numeric(max_tries) || length(max_tries) != 1 || max_tries < 1) {
+    stop("`max_tries` must be a single integer >= 1.", call. = FALSE)
+  }
+  max_tries <- as.integer(max_tries)
 
+  if (na_rm) {
+    x <- x[!is.na(x)]
+    y <- y[!is.na(y)]
+  }
 
-random_sample_greater_no_replace <- function(a, b, strict = FALSE) {
-  stopifnot(is.numeric(a), is.numeric(b))
-
-  a <- a[!is.na(a)]
-  b <- b[!is.na(b)]
+  if (length(x) == 0) {
+    stop("`x` must contain at least one value.", call. = FALSE)
+  }
+  if (length(y) == 0) {
+    stop("`y` must contain at least one non-missing value.", call. = FALSE)
+  }
+  if (any(!is.finite(x)) || any(!is.finite(y))) {
+    stop("`x` and `y` must contain only finite values.", call. = FALSE)
+  }
 
   cmp <- if (strict) `>` else `>=`
 
-  a_out <- a
-  b_pool <- b
+  # Work on copies
+  x_out <- x
+  y_pool <- y
 
-  for (i in seq_along(a_out)) {
-    candidates <- which(cmp(b_pool, a_out[i]))
-
-    if (length(candidates) == 0) {
-      next
+  # Helper: attempt to replace x_out[i] by randomly drawing from y_pool
+  replace_one <- function(i, x_out, y_pool) {
+    # If no feasible candidate exists, leave unchanged
+    if (!any(cmp(y_pool, x_out[i]))) {
+      return(list(x_out = x_out, y_pool = y_pool))
     }
 
-    j <- sample(candidates, 1)
-    a_out[i] <- b_pool[j]
-    b_pool <- b_pool[-j]
+    tries <- 0L
+    repeat {
+      tries <- tries + 1L
+      if (tries > max_tries) {
+        # Give up for this i (same behavior as "leave unchanged")
+        return(list(x_out = x_out, y_pool = y_pool))
+      }
+
+      j <- sample.int(length(y_pool), 1)
+      if (cmp(y_pool[j], x_out[i])) {
+        x_out[i] <- y_pool[j]
+        y_pool <- y_pool[-j]
+        return(list(x_out = x_out, y_pool = y_pool))
+      }
+    }
   }
 
-  data.frame(original_a = a, replaced_a = a_out)
-}
+  for (i in seq_along(x_out)) {
+    res <- replace_one(i, x_out, y_pool)
+    x_out <- res$x_out
+    y_pool <- res$y_pool
+  }
 
+  data.frame(original_x = x, matched_x = x_out)
+}
 

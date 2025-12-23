@@ -7,32 +7,20 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
 )
-```
 
-```{r setup}
 library(rpairconstrain)
 ```
 
----
-title: "Randomly pairing two vectors under inequality constraints"
-description: "Random pairing of numeric vectors under ≥ or > constraints, with and without replacement."
-format:
-  html:
-    toc: true
-    toc-depth: 3
-    number-sections: true
-execute:
-  echo: true
-  warning: false
-  message: false
----
-
 ## Motivation
+
+Randomly pair two vectors element-wise while enforcing an inequality constraint.
 
 In many applied settings—such as tax and income microdata reconstruction from
 tabulated data—researchers face the problem of **combining different components
@@ -47,10 +35,6 @@ Typical examples include:
 This vignette documents two helper functions provided by the
 `rpairconstrain` package that address these needs.
 
----
-
-## Overview of the approach
-
 The general idea is:
 
 1. Start with two numeric vectors.
@@ -59,48 +43,57 @@ The general idea is:
 3. Randomly select one feasible candidate.
 4. Optionally remove the selected value from the pool.
 
-The package provides two variants depending on whether reuse of values is
+The package provides two variants (Pairing with replacement and without replacement) depending on whether reuse of values is
 allowed.
 
----
 
-## Functions provided by the package
-
-### 1. Pairing with replacement
-
-`random_sample_greater()` pairs each element of a vector `x` with a value from
-`y` **allowing reuse** of values from `y`.
-
-The enforced constraint is:
-
-- `sampled >= x[i]` (default), or
-- `sampled > x[i]` if `strict = TRUE`.
-
-This is appropriate when `y` represents a distribution or source that can be
-drawn from repeatedly.
-
----
-
-### 2. Pairing without replacement
-
-`random_sample_greater_no_replace()` pairs each element of a vector `a` with a
-value from `b` **without replacement**.
-
-Each value of `b` can be used at most once. If no feasible candidate exists for
-a given element, the original value is left unchanged.
-
-This is appropriate when `b` represents a finite pool of observations.
-
----
-
-## Example: pairing with replacement
+## Basic usage
 
 ```{r}
-library(rpairconstrain)
-
 set.seed(123)
 
-x <- c(10, 20, 30, 40)
-y <- c(5, 10, 15, 25, 35, 50)
+x <- c(1, 2, 3, 4)
+y <- c(2, 3, 5, 6)
 
-random_sample_greater(x, y)
+random_sample_greater(x, y, strict = TRUE)
+```
+
+## Supported constraints
+
+```{r}
+random_sample_greater(x, y, strict = TRUE)   # >
+random_sample_greater(x, y, strict = FALSE)  # >=
+```
+
+## Reproducibility
+
+```{r}
+set.seed(42)
+random_sample_greater(x, y, strict = TRUE)
+```
+
+## Failure example
+
+```{r, error = TRUE}
+x <- c(5, 6, 7)
+y <- c(1, 2, 3)
+
+random_sample_greater(x, y, strict = TRUE)
+```
+
+## Without replacement
+
+```{r}
+set.seed(123)
+
+x <- c(1, 2, 3, 4)
+y <- c(2, 3, 5, 6)
+
+out_nr <- random_sample_greater_no_replace(x, y, strict = TRUE, max_tries = 1000)
+out_nr
+
+# In this variant, if no feasible candidate is found for some x[i],
+# that element may remain unchanged.
+stopifnot(all(out_nr$matched_x >= out_nr$original_x | out_nr$matched_x == out_nr$original_x))
+```
+
