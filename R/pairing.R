@@ -1,5 +1,8 @@
-#' Randomly sample values under an inequality constraint (with replacement)
+#' Randomly sample values under an inequality constraint
+#' (c) 2025 by Leonardo Hansa, Adrian Manzanal Oliva, and Víctor M. Gómez-Blanco
 #'
+#'
+#' Purpose: randomly sample values under an inequality constraint (with replacement)
 #' For each element of `x`, randomly samples one value from `y` that satisfies
 #' `sampled >= x[i]` (default) or `sampled > x[i]` (`strict = TRUE`). Sampling
 #' is performed with replacement, so values in `y` may be reused.
